@@ -1,6 +1,5 @@
-import LoginCarousel from "@/src/components/authComponents/LoginCarousel";
+import React, { useState } from "react";
 import { useRouter } from "expo-router";
-import React from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -15,9 +14,33 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { moderateScale, scale, verticalScale } from "react-native-size-matters";
 import Illustration from "../../assets/images/illustartion.svg";
 import LoginLogo from "../../assets/images/newlogo1.svg";
+import LoginCarousel from "@/src/components/authComponents/LoginCarousel";
 
 export default function Login() {
   const router = useRouter();
+  const [input, setInput] = useState("");
+  const [error, setError] = useState("");
+
+  const validate = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\d{11,15}$/; // 91 + 10 digits = 12
+
+    const trimmed = input.trim();
+
+    if (emailRegex.test(trimmed)) {
+      setError("");
+      console.log("Sending Email:", trimmed);
+      router.push("/(auth)/otp");
+    } else if (phoneRegex.test(trimmed)) {
+      const finalPhone = `+${trimmed}`;
+      setError("");
+      console.log("Sending Phone:", finalPhone);
+      router.push("/(auth)/otp");
+    } else {
+      setError("Enter a valid email or phone number with country code");
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -29,49 +52,36 @@ export default function Login() {
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
         >
-          {/* Top Logo */}
-          <View>
-            <LoginLogo width={scale(228)} height={scale(68)} />
-          </View>
-
-          {/* Illustration */}
+          <LoginLogo width={scale(228)} height={scale(68)} />
           <Illustration width={scale(399)} height={verticalScale(202)} />
 
-          {/* Intro Text */}
-          {/* <View style={styles.textWrapper}>
-            <Text style={styles.title}>
-              Simplify your dental practice with smart scheduling and patient
-              management.
-            </Text>
-            <Text style={styles.subtitle}>
-              Streamline appointments, manage patient records, and grow your
-              practice with our comprehensive solution.
-            </Text>
-          </View>
-
-          <Dots width={scale(50)} height={verticalScale(10)} /> */}
-
-          {/* Carousel */}
           <LoginCarousel />
 
-          {/* Form Section */}
           <View style={styles.form}>
             <Text style={styles.label}>Email or Phone Number</Text>
+
             <TextInput
-              placeholder="Enter your email id or phone number"
+              placeholder="Enter email or phone (e.g. +123456789012)"
               placeholderTextColor="#7B7B7B"
-              style={styles.input}
+              style={[styles.input, { fontFamily: "Mulish-Regular" }]}
+              value={input}
+              onChangeText={setInput}
+              keyboardType={/^\d/.test(input) ? "phone-pad" : "email-address"}
+              autoCapitalize="none"
             />
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => router.push("/(auth)/otp")}
-            >
-              <Text style={styles.buttonText}>Continue</Text>
+
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <TouchableOpacity style={styles.button} onPress={validate}>
+              <Text style={styles.buttonText}>Continue </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Footer */}
-          <Text style={styles.link} onPress={() => router.push("/(auth)/register")}>
+          <Text
+            style={styles.link}
+            onPress={() => router.push("/(auth)/register")}
+          >
             Not a Member? Click here
           </Text>
         </ScrollView>
@@ -81,10 +91,7 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+  safeArea: { flex: 1, backgroundColor: "#fff" },
   container: {
     flexGrow: 1,
     paddingHorizontal: scale(16),
@@ -92,22 +99,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
     gap: verticalScale(24),
-  },
-  textWrapper: {
-    alignItems: "center",
-    gap: verticalScale(8),
-  },
-  title: {
-    fontSize: moderateScale(16),
-    fontFamily: "Mulish-Bold",
-    textAlign: "center",
-    color: "#000000",
-  },
-  subtitle: {
-    fontSize: moderateScale(14),
-    fontFamily: "Mulish-SemiBold",
-    textAlign: "center",
-    color: "#7B7B7B",
   },
   form: {
     width: "100%",
@@ -137,12 +128,18 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#fff",
+    textAlign: "center",
     fontSize: moderateScale(14),
-    fontFamily: "Mulish-Bold",
+    fontWeight: "600",
   },
   link: {
     color: "#7B7B7B",
     fontSize: moderateScale(14),
     fontFamily: "Mulish-SemiBold",
+  },
+  error: {
+    color: "red",
+    fontSize: moderateScale(12),
+    fontFamily: "Mulish-Regular",
   },
 });

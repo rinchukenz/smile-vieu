@@ -1,14 +1,7 @@
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { Redirect } from "expo-router";
 
 export default function Index() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Delay navigation to /login
-    router.replace("/login");
-  }, []);
-
-  // No UI needed here
-  return null;
+  // If your login screen is in a route group like app/(auth)/login.tsx,
+  // include the group in the href:
+  return <Redirect href="/(auth)/login" />; // or "/login" if that's your path
 }

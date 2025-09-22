@@ -416,3 +416,46 @@ const f = StyleSheet.create({
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
       </Stack> */}
+
+
+//{index.tsx having auth based redirection}
+
+import { Redirect } from "expo-router";
+import { useEffect, useState } from "react";
+import { View, ActivityIndicator } from "react-native";
+
+// Example: replace this with your real auth check (e.g. Firebase, Supabase, AsyncStorage, Clerk)
+async function checkAuth() {
+  // fake delay + "logged in" state for demo
+  return new Promise<boolean>((resolve) =>
+    setTimeout(() => resolve(false), 1000) // change to true to simulate logged in
+  );
+}
+
+export default function Index() {
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkAuth().then((result) => {
+      setAuthenticated(result);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    // Show splash while checking auth
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  // Redirect based on auth state
+  if (authenticated) {
+    return <Redirect href="/(app)/home" />; // signed-in area
+  } else {
+    return <Redirect href="/(auth)/login" />;
+  }
+}

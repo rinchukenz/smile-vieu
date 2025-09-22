@@ -4,7 +4,7 @@
     "slug": "smilevieu",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/splash.png",
     "scheme": "smilevieu",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

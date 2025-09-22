@@ -1,15 +1,16 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    TextInput as RNTextInput,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  TextInput as RNTextInput,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { moderateScale, scale, verticalScale } from "react-native-size-matters";
 import BackArrow from "../../assets/images/back-arrow.svg";
+import OtpIcon from "../../assets/icons/otp-icon.svg";
 
 export default function Otp() {
   const [otp, setOtp] = useState(["", "", "", ""]);
@@ -53,6 +54,7 @@ export default function Otp() {
     const enteredOtp = otp.join("");
     console.log("Entered OTP:", enteredOtp);
     //  call verify OTP API here
+    router.push("/(auth)/userAgreement");
   };
 
   const handleBackPress = () => {
@@ -65,6 +67,11 @@ export default function Otp() {
       <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
         <BackArrow width={scale(24)} height={scale(24)} />
       </TouchableOpacity>
+
+      {/* Otp-Icon */}
+      <View style={styles.otpIcon}>
+        <OtpIcon width={moderateScale(70)} height={moderateScale(70)} />
+      </View>
 
       {/* Top Text */}
       <View style={styles.textContainer}>
@@ -124,7 +131,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   backButton: {
-    position: 'absolute', // This places it absolutely
+    position: "absolute", // This places it absolutely
     top: verticalScale(60), // You can adjust this value to fit your design
     left: scale(16), // This places it in the left corner
     zIndex: 1, // Ensures it stays on top of other content
@@ -136,10 +143,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: moderateScale(18),
     fontFamily: "Mulish-Bold",
-    textAlign: "left",
+    textAlign: "center",
   },
   subtitle: {
-    textAlign: "left",
+    textAlign: "center",
     fontSize: moderateScale(14),
     fontFamily: "Mulish-SemiBold",
     color: "#7B7B7B",
@@ -147,6 +154,10 @@ const styles = StyleSheet.create({
   otpContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: verticalScale(24),
+  },
+  otpIcon: {
     alignItems: "center",
     marginBottom: verticalScale(24),
   },
@@ -174,10 +185,12 @@ const styles = StyleSheet.create({
   },
   timerText: {
     color: "#7B7B7B",
+    fontSize: moderateScale(14),
   },
   resendText: {
     color: "#22466D",
     fontWeight: "600",
+    fontSize: moderateScale(14),
   },
   button: {
     backgroundColor: "#107483",
