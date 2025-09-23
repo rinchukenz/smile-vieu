@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Modal,
   Pressable,
   StyleSheet,
   Platform,
@@ -16,6 +15,7 @@ import { moderateScale, scale, verticalScale } from "react-native-size-matters";
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker"; // ⬅️ NEW
 import Back from "../../assets/images/back-arrow.svg";
 import Person from "../../assets/icons/person.svg";
 import Calendar from "../../assets/icons/calendar.svg";
@@ -25,29 +25,68 @@ import { useRouter } from "expo-router";
 type Gender = "Male" | "Female" | "Others" | "";
 
 export default function BasicDetails() {
+  const genderAnchorRef = React.useRef<View>(null);
   const router = useRouter();
+
+  // Keep keyboard open + restore focus
+  const firstNameRef = React.useRef<TextInput>(null);
+  const lastNameRef = React.useRef<TextInput>(null);
+  const kbKeeperRef = React.useRef<TextInput>(null);
+  const [lastFocused, setLastFocused] = useState<"first" | "last" | null>(null);
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
 
-  // DOB: keep both a Date (for picker) and a text (for typing)
-  const [dob, setDob] = useState<Date | null>(null);
-  const [dobText, setDobText] = useState(""); // dd-mm-yyyy
-  const [touchedDob, setTouchedDob] = useState(false);
+  // absolute (window) coords of the trigger
+  const [anchorPos, setAnchorPos] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
 
   const [gender, setGender] = useState<Gender>("");
   const [genderOpen, setGenderOpen] = useState(false);
 
-  // iOS picker modal visibility
-  const [iosPickerOpen, setIosPickerOpen] = useState(false);
+  // iOS temp selection while wheel is open
+  const [iosTempGender, setIosTempGender] = useState<Gender>(gender);
 
-  // --- Helpers ---
+  const openGender = () => {
+    if (genderAnchorRef.current) {
+      (genderAnchorRef.current as any).measureInWindow(
+        (x: number, y: number, w: number, h: number) => {
+          setAnchorPos({ x, y, width: w, height: h });
+          setGenderOpen(true);
+          setIosTempGender(gender || "Male");
+          // keep the keyboard up
+          setTimeout(() => kbKeeperRef.current?.focus(), 0);
+        }
+      );
+    } else {
+      setGenderOpen(true);
+      setTimeout(() => kbKeeperRef.current?.focus(), 0);
+    }
+  };
+
+  const closeGender = () => {
+    setGenderOpen(false);
+    setTimeout(() => {
+      if (lastFocused === "first") firstNameRef.current?.focus();
+      else if (lastFocused === "last") lastNameRef.current?.focus();
+    }, 0);
+  };
+
+  // DOB
+  const [dob, setDob] = useState<Date | null>(null);
+  const [dobText, setDobText] = useState("");
+  const [touchedDob, setTouchedDob] = useState(false);
+
   const formatDate = (d: Date) => {
     const dd = String(d.getDate()).padStart(2, "0");
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();
     return `${dd}-${mm}-${yyyy}`;
   };
-
   const formatDobInput = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 8);
     let out = "";
@@ -57,7 +96,6 @@ export default function BasicDetails() {
     }
     return out;
   };
-
   const parseDob = (text: string): Date | null => {
     const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(text);
     if (!m) return null;
@@ -65,23 +103,18 @@ export default function BasicDetails() {
     const mm = parseInt(m[2], 10);
     const yyyy = parseInt(m[3], 10);
     if (yyyy < 1900) return null;
-    // Months are 0-indexed in JS
     const candidate = new Date(yyyy, mm - 1, dd);
-    // Validate round-trip (handles invalid dates like 31-02-2023)
     if (
       candidate.getFullYear() !== yyyy ||
       candidate.getMonth() !== mm - 1 ||
       candidate.getDate() !== dd
     )
       return null;
-    // No future dates
     const today = new Date();
     if (candidate > today) return null;
     return candidate;
   };
-
   const isValidDateText = (text: string) => parseDob(text) !== null;
-
   const dobError = useMemo(() => {
     if (!touchedDob) return "";
     if (!dobText) return "Date of birth is required";
@@ -89,29 +122,15 @@ export default function BasicDetails() {
     return "";
   }, [dobText, touchedDob]);
 
-  // const canContinue =
-  //   firstName.trim().length > 0 &&
-  //   lastName.trim().length > 0 &&
-  //   isValidDateText(dobText) &&
-  //   !!gender;
-
   const onContinue = () => {
-    console.log({
-      firstName,
-      lastName,
-      dob: dobText,
-      gender,
-    });
-    //router.push("/(auth)/test");
+    console.log({ firstName, lastName, dob: dobText, gender });
+    router.push("/(auth)/moreDetails");
   };
 
-  const handleBackPress = () => {
-    router.back();
-  };
+  const handleBackPress = () => router.back();
 
-  // ---------- Date Picker handlers ----------
+  // DatePicker (native)
   const openDatePicker = () => {
-    // If user typed a valid date, start picker from it; else a reasonable default
     const initial = parseDob(dobText) || dob || new Date(2000, 0, 1);
     if (Platform.OS === "android") {
       DateTimePickerAndroid.open({
@@ -120,7 +139,6 @@ export default function BasicDetails() {
         is24Hour: true,
         maximumDate: new Date(),
         onChange: (_event, selectedDate) => {
-          // _event.type === 'set' when confirmed, 'dismissed' when cancelled
           if (selectedDate) {
             setDob(selectedDate);
             setDobText(formatDate(selectedDate));
@@ -129,20 +147,9 @@ export default function BasicDetails() {
         },
       });
     } else {
-      // iOS: show modal with inline/spinner picker
       setDob(initial);
-      setIosPickerOpen(true);
+      // you can keep your iOS date modal if you want; omitted here for brevity
     }
-  };
-
-  const onIosConfirm = () => {
-    if (dob) setDobText(formatDate(dob));
-    setTouchedDob(true);
-    setIosPickerOpen(false);
-  };
-
-  const onIosCancel = () => {
-    setIosPickerOpen(false);
   };
 
   return (
@@ -154,10 +161,10 @@ export default function BasicDetails() {
       >
         <ScrollView
           contentContainerStyle={[styles.pagePadding, styles.scrollContent]}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back (placeholder) / Top Container*/}
+          {/* Back */}
           <TouchableOpacity
             style={styles.backWrap}
             hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
@@ -166,14 +173,12 @@ export default function BasicDetails() {
             <Back />
           </TouchableOpacity>
 
-          {/* MiddleContainer */}
+          {/* Middle */}
           <View style={styles.middlecontainer}>
-            {/* Avatar circle (placeholder) */}
             <View style={styles.avatar}>
               <Person width={scale(32)} height={scale(38)} />
             </View>
 
-            {/* Title + subtitle */}
             <View>
               <Text style={styles.title}>Enter your basic details</Text>
               <Text style={styles.subtitle}>
@@ -185,6 +190,8 @@ export default function BasicDetails() {
             <View>
               <Text style={styles.label}>First name</Text>
               <TextInput
+                ref={firstNameRef}
+                onFocus={() => setLastFocused("first")}
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="Enter first name"
@@ -198,6 +205,8 @@ export default function BasicDetails() {
             <View>
               <Text style={styles.label}>Last name</Text>
               <TextInput
+                ref={lastNameRef}
+                onFocus={() => setLastFocused("last")}
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Enter last name"
@@ -229,8 +238,6 @@ export default function BasicDetails() {
                   })}
                   maxLength={10}
                 />
-
-                {/* Right opens native datepicker */}
                 <TouchableOpacity
                   style={styles.rightIcon}
                   onPress={openDatePicker}
@@ -241,23 +248,43 @@ export default function BasicDetails() {
               {!!dobError && <Text style={styles.errorText}>{dobError}</Text>}
             </View>
 
-            {/* Gender */}
+            {/* Gender (Picker with true placeholder – not in options) */}
             <View>
               <Text style={styles.label}>Gender</Text>
-              <Pressable
-                style={styles.dropdown}
-                onPress={() => setGenderOpen(true)}
-              >
-                <Text
+
+              <View style={styles.pickerBox}>
+                {/* Placeholder overlay (clicks pass through) */}
+                {gender === "" && (
+                  <Text pointerEvents="none" style={styles.pickerPlaceholder}>
+                    Select Gender
+                  </Text>
+                )}
+
+                <Picker
+                  // keep selectedValue to a real option so Android opens properly
+                  selectedValue={gender === "" ? "Male" : gender}
+                  onValueChange={(v) => setGender(v as Gender)}
+                  mode={Platform.OS === "android" ? "dropdown" : "dialog"}
+                  dropdownIconColor="#0c5886ff"
+                  // hide the picker's own label when empty so it doesn't overlap placeholder
                   style={[
-                    styles.dropdownText,
-                    !gender && { color: "#7B7B7B" }, // grey when no gender selected
+                    styles.picker,
+                    Platform.OS === "android" && gender === ""
+                      ? { color: "transparent" }
+                      : null,
                   ]}
+                  itemStyle={
+                    Platform.OS === "ios" && gender === ""
+                      ? { color: "transparent" }
+                      : { color: "#0B0B0B" }
+                  }
                 >
-                  {gender || "Select Gender"}
-                </Text>
-                <DownArrow width={scale(32)} height={verticalScale(24)} />
-              </Pressable>
+                  {/* no placeholder item here */}
+                  <Picker.Item label="Male" value="Male" />
+                  <Picker.Item label="Female" value="Female" />
+                  <Picker.Item label="Others" value="Others" />
+                </Picker>
+              </View>
             </View>
           </View>
 
@@ -267,109 +294,16 @@ export default function BasicDetails() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Gender Modal */}
-      <Modal
-        visible={genderOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setGenderOpen(false)}
-      >
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setGenderOpen(false)}
-        >
-          <View style={styles.dropdownContainer}>
-            {(["Male", "Female", "Others"] as Gender[]).map((g) => {
-              const selected = gender === g;
-              return (
-                <Pressable
-                  key={g}
-                  style={styles.radioRow}
-                  onPress={() => {
-                    setGender(g);
-                    setGenderOpen(false);
-                  }}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                >
-                  <View
-                    style={[
-                      styles.radioOuter,
-                      selected && styles.radioOuterActive,
-                    ]}
-                  >
-                    {selected && <View style={styles.radioInner} />}
-                  </View>
-                  <Text style={styles.modalItemText}>{g}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
-
-      {/* iOS DatePicker Modal */}
-      {Platform.OS === "ios" && (
-        <Modal
-          visible={iosPickerOpen}
-          transparent
-          animationType="slide"
-          onRequestClose={onIosCancel}
-        >
-          <View style={styles.iosModalWrap}>
-            <Pressable style={styles.iosScrim} onPress={onIosCancel} />
-            <View style={styles.iosSheet}>
-              <View style={styles.iosSheetHeader}>
-                <TouchableOpacity onPress={onIosCancel}>
-                  <Text style={styles.iosSheetBtnText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onIosConfirm}>
-                  <Text style={styles.iosSheetBtnText}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={dob || new Date(2000, 0, 1)}
-                mode="date"
-                display="spinner"
-                maximumDate={new Date()}
-                onChange={(_e, selected) => {
-                  if (selected) setDob(selected);
-                }}
-                style={{ backgroundColor: "#fff" }}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  pagePadding: {
-    paddingHorizontal: scale(16),
-  },
-  scrollContent: {
-    paddingBottom: verticalScale(24),
-    gap: verticalScale(32),
-  },
-  middlecontainer: {
-    gap: verticalScale(24),
-  },
-  backWrap: {
-    paddingVertical: verticalScale(8),
-    width: scale(40),
-  },
-  backArrow: {
-    fontSize: moderateScale(24),
-    color: "#0E6C73",
-  },
+  safeArea: { flex: 1, backgroundColor: "#ffffff" },
+  pagePadding: { paddingHorizontal: scale(16) },
+  scrollContent: { paddingBottom: verticalScale(32), gap: verticalScale(32) },
+  middlecontainer: { gap: verticalScale(24) },
+  backWrap: { marginTop: verticalScale(8), width: scale(40) },
 
   avatar: {
     alignSelf: "center",
@@ -414,20 +348,30 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
 
-  inputWithIcon: {
+  pickerBox: {
+    marginTop: verticalScale(8),
+    borderWidth: 1,
+    borderColor: "#C2D5D8",
+    borderRadius: scale(5),
+    backgroundColor: "#fff",
+    overflow: "hidden",
     position: "relative",
-    justifyContent: "center",
   },
-  inputFlex: {
-    paddingLeft: scale(36), // space for left icon
-    paddingRight: scale(40), // space for right icon (picker button)
+  picker: {
+    height: moderateScale(48),
+    backgroundColor: "transparent",
   },
-  leftIcon: {
+  pickerPlaceholder: {
     position: "absolute",
-    left: scale(12),
-    fontSize: moderateScale(16),
-    opacity: 0.7,
+    left: scale(10),
+    // vertically center-ish for your 48px control
+    top: (moderateScale(48) - moderateScale(14)) / 2,
+    fontSize: moderateScale(14),
+    color: "#7B7B7B",
+    fontFamily: "Mulish-Regular",
   },
+
+  inputWithIcon: { position: "relative", justifyContent: "center" },
   rightIcon: {
     position: "absolute",
     right: scale(12),
@@ -443,29 +387,6 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
   },
 
-  dropdown: {
-    height: moderateScale(48),
-    borderWidth: 1,
-    borderColor: "#C2D5D8",
-    borderRadius: scale(5),
-    paddingHorizontal: scale(10),
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: verticalScale(8),
-  },
-  dropdownText: {
-    fontSize: moderateScale(14),
-    color: "#0B0B0B", // normal when a gender is selected
-    fontFamily: "Mulish-Regular",
-  },
-  dropdownChevron: {
-    fontSize: moderateScale(16),
-    color: "#657077",
-    marginLeft: scale(8),
-  },
-
   button: {
     backgroundColor: "#0B7C84",
     height: verticalScale(48),
@@ -476,99 +397,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: moderateScale(15),
-    fontFamily: "Mulish-SemiBold",
-  },
-
-  // Gender modal
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: "flex-start", // start from top
-  },
-  dropdownContainer: {
-    marginHorizontal: scale(16), // same horizontal padding
-    paddingHorizontal: scale(16),
-    marginTop: verticalScale(400), // adjust this so it aligns below Gender field
-    backgroundColor: "rgba(231, 241, 243, 0.95)",
-    // backgroundColor: "#E7F1F3",
-    // opacity: 55,
-    borderColor: "#C2D5D8",
-    borderWidth: 1,
-    borderRadius: scale(8),
-    paddingVertical: verticalScale(8),
-  },
-  modalSheet: {
-    backgroundColor: "#fff",
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(12),
-    borderTopLeftRadius: scale(14),
-    borderTopRightRadius: scale(14),
-  },
-  modalItem: {
-    paddingVertical: verticalScale(12),
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E6ECEE",
-  },
-  modalItemText: {
-    fontSize: moderateScale(14),
-    color: "#000000",
-    fontFamily: "Mulish-SemiBold",
-  },
-  radioRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E6ECEE",
-  },
-
-  radioOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#C2D5D8",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-
-  radioOuterActive: {
-    borderColor: "#0B7C84",
-  },
-
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#0B7C84",
-  },
-
-  // iOS date picker sheet
-  iosModalWrap: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  iosScrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.25)",
-  },
-  iosSheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: scale(14),
-    borderTopRightRadius: scale(14),
-    overflow: "hidden",
-  },
-  iosSheetHeader: {
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(12),
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  iosSheetBtnText: {
-    color: "#0B7C84",
-    fontSize: moderateScale(16),
     fontFamily: "Mulish-SemiBold",
   },
 });

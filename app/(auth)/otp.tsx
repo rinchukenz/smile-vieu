@@ -153,7 +153,8 @@ const styles = StyleSheet.create({
   },
   otpContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: moderateScale(15),
     alignItems: "center",
     marginBottom: verticalScale(24),
   },
