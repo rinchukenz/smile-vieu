@@ -7,6 +7,10 @@ export default function AuthLayout() {
       <Stack.Screen name="otp" />
       <Stack.Screen name="userAgreement" />
       <Stack.Screen name="basicDetails" />
+      <Stack.Screen name="moreDetails" />
+      <Stack.Screen name="uploadProfilePicture" />
+      <Stack.Screen name="profileCreated" />
+
     </Stack>
   );
 }

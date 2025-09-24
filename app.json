@@ -24,7 +24,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.smilevieu"
+      "package": "com.anonymous.smilevieu",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "output": "static",

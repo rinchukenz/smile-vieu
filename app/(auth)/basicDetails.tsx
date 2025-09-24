@@ -289,9 +289,17 @@ export default function BasicDetails() {
           </View>
 
           {/* Continue */}
-          <TouchableOpacity style={styles.button} onPress={onContinue}>
+          {/* <TouchableOpacity style={styles.button} onPress={onContinue}>
             <Text style={styles.buttonText}>Continue</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.cta, styles.continue]}
+              onPress={onContinue}
+            >
+              <Text style={styles.continueText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -386,7 +394,25 @@ const styles = StyleSheet.create({
     color: "#C83B3B",
     fontSize: moderateScale(12),
   },
-
+  footer: {
+    marginTop: "auto",
+    paddingVertical: verticalScale(16),
+    gap: verticalScale(12),
+  },
+  cta: {
+    height: verticalScale(48),
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  continue: {
+    backgroundColor: "#0B7C84",
+  },
+  continueText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: moderateScale(14),
+  },
   button: {
     backgroundColor: "#0B7C84",
     height: verticalScale(48),
