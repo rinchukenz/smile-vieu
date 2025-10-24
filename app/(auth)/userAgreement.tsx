@@ -8,11 +8,17 @@ import Eye from "../../assets/icons/eye.svg";
 import Lock from "../../assets/icons/lock.svg";
 import CheckBox from "expo-checkbox";
 import { useRouter } from "expo-router";
+import { useAuthStore } from "@/src/store/authStore";
 
 export default function UserAgreement() {
   const [isChecked, setIsChecked] = useState(false);
   const [footerH, setFooterH] = useState(0); // footer height
   const router = useRouter();
+
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const userId = useAuthStore((state) => state.userId);
+
+  console.log("Token and userId", accessToken, userId)
 
   const handleContinue = () => {
     router.push("/(auth)/basicDetails");

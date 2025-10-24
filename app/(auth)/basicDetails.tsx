@@ -9,14 +9,9 @@ import {
   ScrollView,
   KeyboardAvoidingView,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { moderateScale, scale, verticalScale } from "react-native-size-matters";
-import DateTimePicker, {
-  DateTimePickerAndroid,
-} from "@react-native-community/datetimepicker";
+import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import Back from "../../assets/images/back-arrow.svg";
 import Person from "../../assets/icons/person.svg";
@@ -26,47 +21,33 @@ import { useRouter } from "expo-router";
 type Gender = "Male" | "Female" | "Others" | "";
 
 export default function BasicDetails() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  // Keep keyboard open + restore focus
   const firstNameRef = React.useRef<TextInput>(null);
   const lastNameRef = React.useRef<TextInput>(null);
-  const kbKeeperRef = React.useRef<TextInput>(null);
-  const [lastFocused, setLastFocused] = useState<"first" | "last" | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-
-  const [gender, setGender] = useState<Gender>("");
+  const [gender, setGender] = useState<Gender | "">("");
 
   // DOB
   const [dob, setDob] = useState<Date | null>(null);
   const [dobText, setDobText] = useState("");
-  const [touchedDob, setTouchedDob] = useState(false);
+  const [showIosPicker, setShowIosPicker] = useState(false);
 
   const formatDate = (d: Date) => {
     const dd = String(d.getDate()).padStart(2, "0");
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
+    return `${yyyy}-${mm}-${dd}`;
   };
-  const formatDobInput = (raw: string) => {
-    const digits = raw.replace(/\D/g, "").slice(0, 8);
-    let out = "";
-    for (let i = 0; i < digits.length; i++) {
-      out += digits[i];
-      if (i === 1 || i === 3) out += "-";
-    }
-    return out;
-  };
+
   const parseDob = (text: string): Date | null => {
-    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(text);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
     if (!m) return null;
-    const dd = parseInt(m[1], 10);
+    const yyyy = parseInt(m[1], 10);
     const mm = parseInt(m[2], 10);
-    const yyyy = parseInt(m[3], 10);
-    if (yyyy < 1900) return null;
+    const dd = parseInt(m[3], 10);
     const candidate = new Date(yyyy, mm - 1, dd);
     if (
       candidate.getFullYear() !== yyyy ||
@@ -74,47 +55,64 @@ export default function BasicDetails() {
       candidate.getDate() !== dd
     )
       return null;
-    const today = new Date();
-    if (candidate > today) return null;
+    if (candidate > new Date()) return null;
     return candidate;
   };
-  const isValidDateText = (text: string) => parseDob(text) !== null;
+
   const dobError = useMemo(() => {
-    if (!touchedDob) return "";
     if (!dobText) return "Date of birth is required";
-    if (!isValidDateText(dobText)) return "Enter a valid date (dd-mm-yyyy)";
+    if (!parseDob(dobText)) return "Enter a valid date (yyyy-mm-dd)";
     return "";
-  }, [dobText, touchedDob]);
+  }, [dobText]);
 
-  const onContinue = () => {
-    console.log({ firstName, lastName, dob: dobText, gender });
-    router.push("/(auth)/moreDetails");
-  };
-
-  const handleBackPress = () => router.back();
-
-  // DatePicker (native)
   const openDatePicker = () => {
-    const initial = parseDob(dobText) || dob || new Date(2000, 0, 1);
     if (Platform.OS === "android") {
       DateTimePickerAndroid.open({
-        value: initial,
+        value: dob || new Date(2000, 0, 1),
         mode: "date",
-        is24Hour: true,
         maximumDate: new Date(),
         onChange: (_event, selectedDate) => {
           if (selectedDate) {
             setDob(selectedDate);
             setDobText(formatDate(selectedDate));
-            setTouchedDob(true);
           }
         },
       });
     } else {
-      setDob(initial);
-      // iOS modal logic here if needed
+      setShowIosPicker(true);
     }
   };
+
+  const IOSDatePicker = () => {
+    if (!showIosPicker) return null;
+    return (
+      <DateTimePicker
+        value={dob || new Date(2000, 0, 1)}
+        mode="date"
+        maximumDate={new Date()}
+        display="spinner"
+        onChange={(_, selectedDate) => {
+          setShowIosPicker(false);
+          if (selectedDate) {
+            setDob(selectedDate);
+            setDobText(formatDate(selectedDate));
+          }
+        }}
+        style={{ width: "100%" }}
+      />
+    );
+  };
+
+  const onContinue = () => {
+    if (!firstName || !lastName || !dob || !gender) {
+      alert("Please fill all fields correctly");
+      return;
+    }
+    console.log({ firstName, lastName, dob: dobText, gender });
+    router.push("/(auth)/moreDetails");
+  };
+
+  const handleBackPress = () => router.back();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -125,7 +123,7 @@ export default function BasicDetails() {
       >
         <ScrollView
           contentContainerStyle={[styles.pagePadding, styles.scrollContent]}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Back */}
@@ -155,13 +153,11 @@ export default function BasicDetails() {
               <Text style={styles.label}>First name</Text>
               <TextInput
                 ref={firstNameRef}
-                onFocus={() => setLastFocused("first")}
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="Enter first name"
                 placeholderTextColor="#7B7B7B"
                 style={[styles.input, { fontFamily: "Mulish-Regular" }]}
-                returnKeyType="next"
               />
             </View>
 
@@ -170,13 +166,11 @@ export default function BasicDetails() {
               <Text style={styles.label}>Last name</Text>
               <TextInput
                 ref={lastNameRef}
-                onFocus={() => setLastFocused("last")}
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Enter last name"
                 placeholderTextColor="#7B7B7B"
                 style={[styles.input, { fontFamily: "Mulish-Regular" }]}
-                returnKeyType="next"
               />
             </View>
 
@@ -186,68 +180,42 @@ export default function BasicDetails() {
               <View style={styles.inputWithIcon}>
                 <TextInput
                   value={dobText}
-                  onChangeText={(t) => {
-                    const f = formatDobInput(t);
-                    setDobText(f);
-                    const parsed = parseDob(f);
-                    if (parsed) setDob(parsed);
-                  }}
-                  onBlur={() => setTouchedDob(true)}
-                  placeholder="dd-mm-yyyy"
+                  placeholder="yyyy-mm-dd"
                   placeholderTextColor="#7B7B7B"
                   style={[styles.input]}
-                  keyboardType={Platform.select({
-                    ios: "number-pad",
-                    android: "numeric",
-                  })}
-                  maxLength={10}
+                  onFocus={openDatePicker}
                 />
-                <TouchableOpacity
-                  style={styles.rightIcon}
-                  onPress={openDatePicker}
-                >
+                <TouchableOpacity style={styles.rightIcon} onPress={openDatePicker}>
                   <Calendar width={scale(24)} height={scale(24)} />
                 </TouchableOpacity>
               </View>
-              {!!dobError && <Text style={styles.errorText}>{dobError}</Text>}
+              <IOSDatePicker />
+              {!!dobText && !dob && <Text style={styles.errorText}>{dobError}</Text>}
             </View>
 
             {/* Gender */}
-            <View>
-              <Text style={styles.label}>Gender</Text>
-              <View style={styles.pickerBox}>
-                {gender === "" && (
-                  <Text pointerEvents="none" style={styles.pickerPlaceholder}>
-                    Select Gender
-                  </Text>
-                )}
-                <Picker
-                  selectedValue={gender === "" ? "Male" : gender}
-                  onValueChange={(v) => setGender(v as Gender)}
-                  mode={Platform.OS === "android" ? "dropdown" : "dialog"}
-                  dropdownIconColor="#0c5886ff"
-                  style={[
-                    styles.picker,
-                    Platform.OS === "android" && gender === ""
-                      ? { color: "transparent" }
-                      : null,
-                  ]}
-                  itemStyle={
-                    Platform.OS === "ios" && gender === ""
-                      ? { color: "transparent" }
-                      : { color: "#0B0B0B" }
-                  }
-                >
-                  <Picker.Item label="Male" value="Male" />
-                  <Picker.Item label="Female" value="Female" />
-                  <Picker.Item label="Others" value="Others" />
-                </Picker>
-              </View>
-            </View>
+<View>
+  <Text style={styles.label}>Gender</Text>
+  <View style={styles.pickerBox}>
+    <Picker
+      selectedValue={gender}
+      onValueChange={(v) => setGender(v as Gender)}
+      mode={Platform.OS === "android" ? "dropdown" : "dialog"}
+      dropdownIconColor="#0c5886ff"
+      style={styles.picker}
+    >
+      <Picker.Item label="Select Gender" value="" />
+      <Picker.Item label="Male" value="Male" />
+      <Picker.Item label="Female" value="Female" />
+      <Picker.Item label="Others" value="Others" />
+    </Picker>
+  </View>
+</View>
+
           </View>
         </ScrollView>
 
-        {/* Fixed Footer */}
+        {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity style={styles.cta} onPress={onContinue}>
             <Text style={styles.ctaText}>Continue</Text>
@@ -314,20 +282,10 @@ const styles = StyleSheet.create({
     borderColor: "#C2D5D8",
     borderRadius: scale(5),
     backgroundColor: "#fff",
-    overflow: "hidden",
-    position: "relative",
   },
   picker: {
     height: moderateScale(48),
-    backgroundColor: "transparent",
-  },
-  pickerPlaceholder: {
-    position: "absolute",
-    left: scale(10),
-    top: (moderateScale(48) - moderateScale(14)) / 2,
-    fontSize: moderateScale(14),
-    color: "#7B7B7B",
-    fontFamily: "Mulish-Regular",
+    color: "#0B0B0B", // make sure text is visible
   },
 
   inputWithIcon: { position: "relative", justifyContent: "center" },
@@ -346,7 +304,11 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
   },
 
-  footer: { paddingHorizontal: scale(16), paddingBottom: verticalScale(16) },
+  footer: {
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(16),
+    backgroundColor: "#fff",
+  },
   cta: {
     backgroundColor: "#0B7C84",
     paddingVertical: verticalScale(14),

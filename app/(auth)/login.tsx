@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,29 +16,46 @@ import { moderateScale, scale, verticalScale } from "react-native-size-matters";
 import Illustration from "../../assets/images/illustartion.svg";
 import LoginLogo from "../../assets/images/newlogo1.svg";
 import LoginCarousel from "@/src/components/authComponents/LoginCarousel";
+import { requestOtp } from "@/src/api/auth";
 
 export default function Login() {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
 
-  const validate = () => {
+  const validate = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\d{11,15}$/; // 91 + 10 digits = 12
-
+    const phoneRegex = /^\d{10,15}$/; // 10+ digits (no country code)
     const trimmed = input.trim();
+    let identifier = "";
 
     if (emailRegex.test(trimmed)) {
+      identifier = trimmed;
       setError("");
-      console.log("Sending Email:", trimmed);
-      router.push("/(auth)/otp");
+      console.log("Sending Email:", identifier);
     } else if (phoneRegex.test(trimmed)) {
-      const finalPhone = `+${trimmed}`;
+      identifier = `+${trimmed}`; // add + for phone number
       setError("");
-      console.log("Sending Phone:", finalPhone);
-      router.push("/(auth)/otp");
+      console.log("Sending Phone:", identifier);
     } else {
-      setError("Enter a valid email or phone number with country code");
+      setError("Enter a valid email or phone number");
+      return; // stop execution if invalid
+    }
+
+    try {
+      const channel = /^\+?\d/.test(identifier) ? "sms" : "email";
+      const res = await requestOtp(identifier, channel);
+      console.log("OTP Request Response:", res);
+
+      // Navigate to OTP screen after successful request
+      router.push({
+        pathname: "/(auth)/otp",
+        params: { requestId: res.requestId }
+      });
+      
+      } catch (err: any) {
+      console.error(err.response?.data || err.message);
+      Alert.alert("Error", "Failed to send OTP. Please try again.");
     }
   };
 
@@ -61,7 +79,7 @@ export default function Login() {
             <Text style={styles.label}>Email or Phone Number</Text>
 
             <TextInput
-              placeholder="Enter email or phone (e.g. +123456789012)"
+              placeholder="Enter email or phone (e.g. +1234567890)"
               placeholderTextColor="#7B7B7B"
               style={[styles.input, { fontFamily: "Mulish-Regular" }]}
               value={input}
@@ -70,11 +88,10 @@ export default function Login() {
               autoCapitalize="none"
             />
 
-
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <TouchableOpacity style={styles.button} onPress={validate}>
-              <Text style={styles.buttonText}>Continue </Text>
+              <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
           </View>
 
@@ -100,10 +117,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     gap: verticalScale(24),
   },
-  form: {
-    width: "100%",
-    gap: verticalScale(8),
-  },
+  form: { width: "100%", gap: verticalScale(8) },
   label: {
     fontSize: moderateScale(14),
     color: "#000000",

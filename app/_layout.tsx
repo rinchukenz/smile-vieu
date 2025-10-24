@@ -4,11 +4,12 @@ import "react-native-gesture-handler";
 import { useFonts } from "expo-font";
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View, Dimensions, StyleSheet } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useAuthStore } from "@/src/store/authStore";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -19,17 +20,29 @@ export default function RootLayout() {
     "Mulish-Medium": require("../assets/fonts/Mulish-Medium.ttf"),
   });
 
+
+  const loadAuthFromStorage = useAuthStore((state) => state.loadAuthFromStorage);
+  const [authLoaded, setAuthLoaded] = useState(false);
+
   useEffect(() => {
-    const { width } = Dimensions.get("window");
-    if (width < 600) {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-    } else {
-      ScreenOrientation.unlockAsync();
-    }
+    const initApp = async () => {
+      await loadAuthFromStorage(); // load tokens from SecureStore
+      setAuthLoaded(true);
+
+      const { width } = Dimensions.get("window");
+      if (width < 600) {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      } else {
+        await ScreenOrientation.unlockAsync();
+      }
+    };
+    initApp();
+
     return () => {
       ScreenOrientation.unlockAsync();
     };
   }, []);
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
