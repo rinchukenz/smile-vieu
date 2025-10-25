@@ -1,75 +1,120 @@
-import React, { useMemo, useState } from "react";
-import { View } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  StyleSheet,
+} from "react-native";
 
 type Props = {
   value?: string;
   onChange?: (val: string) => void;
 };
 
-const MAIN_OPTIONS = ["MBBS", "MSc", "MDS", "BDS", "Others"] as const;
-const OTHERS_OPTIONS = ["PG Diploma", "Diplomate", "Fellowship"] as const;
-const BACK = "__BACK__";
-const PLACEHOLDER = "__PLACEHOLDER__";
+const MAIN_OPTIONS = ["MBBS", "MD", "MDS", "BDS", "Others"];
+const OTHERS_OPTIONS = ["PG Diploma", "Diplomate", "Fellowship"];
 
 const QualificationPicker: React.FC<Props> = ({ value, onChange }) => {
-  // Only UI state (for navigating the "Others" submenu). Selection is controlled by parent.
+  const [modalVisible, setModalVisible] = useState(false);
   const [choosingOthers, setChoosingOthers] = useState(false);
 
-  const items = useMemo(
-    () => (choosingOthers ? [BACK, ...OTHERS_OPTIONS] : MAIN_OPTIONS),
-    [choosingOthers]
-  );
+  const BACK = "__BACK__";
+  const options = choosingOthers ? [BACK, ...OTHERS_OPTIONS] : MAIN_OPTIONS;
+  
 
-  const selectedValue = value || PLACEHOLDER;
+  const handleSelect = (val: string) => {
+    if (val === "Others") {
+      setChoosingOthers(true);
+      return;
+    }
+    if (val === BACK) {
+      setChoosingOthers(false);
+      return;
+    }
+    onChange?.(val);
+    setChoosingOthers(false);
+    setModalVisible(false);
+  };
 
   return (
     <View>
-      <Picker
-        selectedValue={selectedValue}
-        onValueChange={(val) => {
-          const v = String(val);
-          console.log("[QualificationPicker] onValueChange ->", v);
-
-          if (v === PLACEHOLDER) return;
-
-          if (!choosingOthers) {
-            if (v === "Others") {
-              console.log("[QualificationPicker] entering OTHERS submenu");
-              setChoosingOthers(true);
-              return;
-            }
-            console.log("[QualificationPicker] selecting qualification:", v);
-            onChange?.(v);
-          } else {
-            if (v === BACK) {
-              console.log("[QualificationPicker] back to MAIN options");
-              setChoosingOthers(false);
-              return;
-            }
-            console.log("[QualificationPicker] selecting OTHERS qualification:", v);
-            setChoosingOthers(false);
-            onChange?.(v);
-          }
-        }}
-        mode="dropdown"
-        dropdownIconColor="#7B7B7B"
+      <TouchableOpacity
+        style={styles.inputBox}
+        onPress={() => setModalVisible(true)}
       >
-        <Picker.Item
-          label="Select qualification"
-          value={PLACEHOLDER}
-          enabled={false}
-        />
-        {items.map((it) =>
-          it === BACK ? (
-            <Picker.Item key={it} label="← Back" value={BACK} />
-          ) : (
-            <Picker.Item key={it} label={it} value={it} />
-          )
-        )}
-      </Picker>
+        <Text style={{ color: value ? "#000" : "#7B7B7B" }}>
+          {value || "Select qualification"}
+        </Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.option}
+                  onPress={() => handleSelect(item)}
+                >
+                  <Text style={styles.optionText}>
+                    {item === BACK ? "← Back" : item}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity
+              style={[styles.option, { borderTopWidth: 1, borderColor: "#ccc" }]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={[styles.optionText, { color: "red", textAlign: "center" }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  inputBox: {
+    // borderWidth: 1,
+    // borderColor: "#C2D5D8",
+    // borderRadius: 8,
+    padding: 12,
+    justifyContent: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    maxHeight: 300,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  option: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+  },
+  optionText: {
+    fontSize: 16,
+    color: "#000",
+  },
+});
 
 export default QualificationPicker;

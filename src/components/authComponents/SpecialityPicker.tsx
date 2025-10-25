@@ -1,160 +1,124 @@
-import React, { useMemo, useEffect } from "react";
-import { Platform, View } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import React, { useState, useMemo, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  StyleSheet,
+} from "react-native";
 
 type Props = {
-  qualification?: string; // e.g. "MBBS", "MSc", "MDS", ...
-  value?: string;         // selected specialty (controlled by parent)
+  qualification?: string;
+  value?: string;
   onChange?: (val: string) => void;
-};
-
-const SPECIALTIES: Record<string, string[]> = {
-  MBBS: [
-    "General Medicine",
-    "Pediatrics",
-    "Dermatology",
-    "Psychiatry",
-    "Radiology",
-    "Anesthesiology",
-    "Emergency Medicine",
-    "Family Medicine",
-  ],
-  MSc: [
-    "Orthodontics",
-    "Oral Surgery",
-    "Periodontology",
-    "Endodontics",
-    "Prosthodontics",
-    "Oral Medicine & Radiology",
-    "Public Health Dentistry",
-  ],
-  MDS: [
-    "Orthodontics",
-    "Oral & Maxillofacial Surgery",
-    "Endodontics",
-    "Periodontology",
-    "Prosthodontics",
-    "Pediatric Dentistry",
-    "Oral Medicine & Radiology",
-    "Public Health Dentistry",
-  ],
-  BDS: [
-    "General Dentistry",
-    "Endodontics",
-    "Periodontics",
-    "Prosthodontics",
-    "Oral Surgery",
-    "Orthodontics",
-    "Pediatric Dentistry",
-  ],
-  "PG Diploma": [
-    "Oral Surgery",
-    "Orthodontics",
-    "Implantology",
-    "Endodontics",
-    "Periodontology",
-  ],
-  Diplomate: [
-    "Orthodontics",
-    "Implantology",
-    "Oral & Maxillofacial Surgery",
-    "Endodontics",
-  ],
-  Fellowship: [
-    "Cosmetic Dentistry",
-    "Implantology",
-    "Oral Oncology",
-    "TMJ Disorders",
-    "Cleft & Craniofacial",
-  ],
-};
-
-const normalizeQualification = (
-  q?: string
-): keyof typeof SPECIALTIES | undefined => {
-  if (!q) return undefined;
-  const t = q.trim();
-  const map: Record<string, keyof typeof SPECIALTIES> = {
-    MBBS: "MBBS",
-    "M.Sc": "MSc",
-    MSC: "MSc",
-    MSc: "MSc",
-    MDS: "MDS",
-    BDS: "BDS",
-    "PG DIPLOMA": "PG Diploma",
-    "PG Diploma": "PG Diploma",
-    Diplomate: "Diplomate",
-    Fellowship: "Fellowship",
-  };
-  if (map[t]) return map[t];
-
-  const ci = t.toLowerCase();
-  const fromMap = Object.keys(map).find((k) => k.toLowerCase() === ci);
-  if (fromMap) return map[fromMap];
-
-  const fromKeys = Object.keys(SPECIALTIES).find((k) => k.toLowerCase() === ci);
-  return fromKeys as keyof typeof SPECIALTIES | undefined;
 };
 
 const PLACEHOLDER = "__PLACEHOLDER__";
 
-const SpecialityPicker: React.FC<Props> = ({ qualification, value, onChange }) => {
-  const normQ = normalizeQualification(qualification);
+const SpecialityPickerModal: React.FC<Props> = ({ qualification, value, onChange }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Use the same options logic as before
+  const normQ = qualification; // keep normalization logic outside if needed
+  const SPECIALTIES: Record<string, string[]> = {
+    MBBS: ["General Medicine","Pediatrics","Dermatology","Psychiatry","Radiology","Anesthesiology","Emergency Medicine","Family Medicine"],
+    MSc: ["Orthodontics","Oral Surgery","Periodontology","Endodontics","Prosthodontics","Oral Medicine & Radiology","Public Health Dentistry"],
+    MDS: ["Orthodontics","Oral & Maxillofacial Surgery","Endodontics","Periodontology","Prosthodontics","Pediatric Dentistry","Oral Medicine & Radiology","Public Health Dentistry"],
+    BDS: ["General Dentistry","Endodontics","Periodontics","Prosthodontics","Oral Surgery","Orthodontics","Pediatric Dentistry"],
+    "PG Diploma": ["Oral Surgery","Orthodontics","Implantology","Endodontics","Periodontology"],
+    Diplomate: ["Orthodontics","Implantology","Oral & Maxillofacial Surgery","Endodontics"],
+    Fellowship: ["Cosmetic Dentistry","Implantology","Oral Oncology","TMJ Disorders","Cleft & Craniofacial"],
+  };
+
   const options = useMemo(() => (normQ ? SPECIALTIES[normQ] ?? [] : []), [normQ]);
 
   // Clear invalid specialty when qualification changes
   useEffect(() => {
     const valid = !!(value && options.includes(value));
-    console.log(
-      "[SpecialityPicker] qualification:",
-      normQ,
-      "current value:",
-      value,
-      "valid:",
-      valid
-    );
-    if (value && !valid) {
-      console.log("[SpecialityPicker] clearing invalid specialty for qualification:", normQ);
-      onChange?.("");
-    }
-  }, [options, value, normQ, onChange]);
+    if (value && !valid) onChange?.("");
+  }, [options, value, onChange]);
 
-  const selectedValue = value && options.includes(value) ? value : PLACEHOLDER;
-  const isEnabled = options.length > 0;
+  const handleSelect = (val: string) => {
+    onChange?.(val);
+    setModalVisible(false);
+  };
 
   return (
     <View>
-      <Picker
-        key={normQ || "no-qual"} // remount to reset native state when qualification changes
-        selectedValue={selectedValue}
-        onValueChange={(itemValue) => {
-          const v = String(itemValue);
-          console.log("[SpecialityPicker] onValueChange ->", v);
-          if (v === PLACEHOLDER) return; // ignore placeholder
-          onChange?.(v);
-        }}
-        mode={Platform.OS === "android" ? "dialog" : "dropdown"}
-        dropdownIconColor="#7B7B7B"
-        enabled={isEnabled}
-        testID="speciality-picker"
+      <TouchableOpacity
+        style={styles.inputBox}
+        onPress={() => options.length && setModalVisible(true)}
       >
-        <Picker.Item
-          label={
-            !normQ
-              ? "Select qualification first"
-              : options.length
-              ? "Select specialty"
-              : "No specialties for this qualification"
-          }
-          value={PLACEHOLDER}
-          enabled={false}
-        />
-        {options.map((sp) => (
-          <Picker.Item key={sp} label={sp} value={sp} />
-        ))}
-      </Picker>
+        <Text style={{ color: value ? "#000" : "#7B7B7B" }}>
+          {value || (!options.length ? "Select qualification first" : "Select specialty")}
+        </Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.option}
+                  onPress={() => handleSelect(item)}
+                >
+                  <Text style={styles.optionText}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity
+              style={[styles.option, { borderTopWidth: 1, borderColor: "#ccc" }]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={[styles.optionText, { color: "red", textAlign: "center" }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
-export default SpecialityPicker;
+const styles = StyleSheet.create({
+  inputBox: {
+    // borderWidth: 1,
+    // borderColor: "#cf6a12ff",
+    // borderRadius: 8,
+    padding: 12,
+    justifyContent: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    maxHeight: 300,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  option: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderColor: "#eee",
+  },
+  optionText: {
+    fontSize: 16,
+    color: "#000",
+  },
+});
+
+export default SpecialityPickerModal;

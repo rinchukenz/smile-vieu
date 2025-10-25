@@ -2,27 +2,24 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { moderateScale, scale, verticalScale } from "react-native-size-matters";
-// import LottieView from "lottie-react-native";
-import SuccessImage from "../../assets/images/profile-created.svg";
-// import successAnim from "../../assets/animations/success.json";
+import LottieView from "lottie-react-native";
+import successAnim from "../../assets/animations/success.json"; // your Lottie file
 
 const ProfileCreated = () => {
-  // const lottieRef = useRef<LottieView>(null);
-  // const router = useRouter();
+  const lottieRef = useRef<LottieView>(null);
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.card}>
-        {/* <LottieView
+        {/* Lottie Animation */}
+        <LottieView
           ref={lottieRef}
           source={successAnim}
           autoPlay
           loop={false}
-          style={{ width: scale(320), height: scale(300), alignSelf: "center" }}
-          // speed={1} // tweak if needed
-          // onAnimationFinish={() => router.push("/(app)/home")}
-        /> */}
-        <SuccessImage />
+          style={{ width: scale(300), height: scale(300), alignSelf: "center" }}
+        />
+
         <Text style={styles.text}>Profile Created</Text>
         <Text style={styles.subtext}>
           Great job, Alex! Your profile has been successfully created. You're
@@ -34,7 +31,7 @@ const ProfileCreated = () => {
         <TouchableOpacity
           style={[styles.cta, styles.continue]}
           onPress={() => {
-            // router.push("/(app)/home");
+            // navigate to next screen here
           }}
         >
           <Text style={styles.continueText}>Continue</Text>

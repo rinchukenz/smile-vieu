@@ -8,20 +8,29 @@ import {
   Platform,
   ScrollView,
   KeyboardAvoidingView,
+  Animated,
+  Modal,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { moderateScale, scale, verticalScale } from "react-native-size-matters";
-import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
+import DateTimePicker, {
+  DateTimePickerAndroid,
+} from "@react-native-community/datetimepicker";
 import Back from "../../assets/images/back-arrow.svg";
 import Person from "../../assets/icons/person.svg";
 import Calendar from "../../assets/icons/calendar.svg";
 import { useRouter } from "expo-router";
+import { useAuthStore } from "@/src/store/authStore";
+import { fillBasicDetails } from "@/src/api/auth";
 
 type Gender = "Male" | "Female" | "Others" | "";
 
 export default function BasicDetails() {
   const router = useRouter();
+
+  const userId = useAuthStore((state) => state.userId);
+  
 
   const firstNameRef = React.useRef<TextInput>(null);
   const lastNameRef = React.useRef<TextInput>(null);
@@ -29,11 +38,23 @@ export default function BasicDetails() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [gender, setGender] = useState<Gender | "">("");
+  const [showGenderModal, setShowGenderModal] = useState(false);
 
-  // DOB
   const [dob, setDob] = useState<Date | null>(null);
   const [dobText, setDobText] = useState("");
   const [showIosPicker, setShowIosPicker] = useState(false);
+
+  // Animation states
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const translateY = useMemo(() => new Animated.Value(0), []);
+
+  const animateShift = (open: boolean) => {
+    Animated.timing(translateY, {
+      toValue: open ? -verticalScale(120) : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const formatDate = (d: Date) => {
     const dd = String(d.getDate()).padStart(2, "0");
@@ -66,12 +87,17 @@ export default function BasicDetails() {
   }, [dobText]);
 
   const openDatePicker = () => {
+    setIsPickerOpen(true);
+    animateShift(true);
+
     if (Platform.OS === "android") {
       DateTimePickerAndroid.open({
         value: dob || new Date(2000, 0, 1),
         mode: "date",
         maximumDate: new Date(),
         onChange: (_event, selectedDate) => {
+          setIsPickerOpen(false);
+          animateShift(false);
           if (selectedDate) {
             setDob(selectedDate);
             setDobText(formatDate(selectedDate));
@@ -90,9 +116,11 @@ export default function BasicDetails() {
         value={dob || new Date(2000, 0, 1)}
         mode="date"
         maximumDate={new Date()}
-        display="spinner"
+        display="inline"
         onChange={(_, selectedDate) => {
           setShowIosPicker(false);
+          setIsPickerOpen(false);
+          animateShift(false);
           if (selectedDate) {
             setDob(selectedDate);
             setDobText(formatDate(selectedDate));
@@ -103,14 +131,53 @@ export default function BasicDetails() {
     );
   };
 
-  const onContinue = () => {
-    if (!firstName || !lastName || !dob || !gender) {
-      alert("Please fill all fields correctly");
-      return;
-    }
-    console.log({ firstName, lastName, dob: dobText, gender });
-    router.push("/(auth)/moreDetails");
+  const openGenderModal = () => {
+    setIsPickerOpen(true);
+    animateShift(true);
+    setShowGenderModal(true);
   };
+
+  const closeGenderModal = () => {
+    setIsPickerOpen(false);
+    animateShift(false);
+    setShowGenderModal(false);
+  };
+
+  const selectGender = (value: Gender) => {
+    setGender(value);
+    closeGenderModal();
+  };
+
+  const onContinue = async () => {
+  if (!firstName || !lastName || !dobText || !gender) {
+    alert("Please fill all fields correctly");
+    return;
+  }
+
+  try {
+    const response = await fillBasicDetails({
+      firstName,
+      lastName,
+      dob: dobText,
+      gender,
+    });
+
+    console.log("Basic details response:", response);
+
+    router.push("/(auth)/moreDetails");
+
+
+    // if (response.status === "SUCCESS") {
+    //   alert("Details submitted successfully!");
+    //   router.push("/(auth)/moreDetails");
+    // } else {
+    //   alert(response.message || "Failed to save details");
+    // }
+  } catch (error: any) {
+    console.error("Error saving details:", error);
+    alert(error.message || "Something went wrong");
+  }
+};
 
   const handleBackPress = () => router.back();
 
@@ -135,8 +202,10 @@ export default function BasicDetails() {
             <Back />
           </TouchableOpacity>
 
-          {/* Middle */}
-          <View style={styles.middlecontainer}>
+          {/* Middle content with animation */}
+          <Animated.View
+            style={[styles.middlecontainer, { transform: [{ translateY }] }]}
+          >
             <View style={styles.avatar}>
               <Person width={scale(32)} height={scale(38)} />
             </View>
@@ -185,34 +254,72 @@ export default function BasicDetails() {
                   style={[styles.input]}
                   onFocus={openDatePicker}
                 />
-                <TouchableOpacity style={styles.rightIcon} onPress={openDatePicker}>
+                <TouchableOpacity
+                  style={styles.rightIcon}
+                  onPress={openDatePicker}
+                >
                   <Calendar width={scale(24)} height={scale(24)} />
                 </TouchableOpacity>
               </View>
               <IOSDatePicker />
-              {!!dobText && !dob && <Text style={styles.errorText}>{dobError}</Text>}
+              {!!dobText && !dob && (
+                <Text style={styles.errorText}>{dobError}</Text>
+              )}
             </View>
 
             {/* Gender */}
-<View>
-  <Text style={styles.label}>Gender</Text>
-  <View style={styles.pickerBox}>
-    <Picker
-      selectedValue={gender}
-      onValueChange={(v) => setGender(v as Gender)}
-      mode={Platform.OS === "android" ? "dropdown" : "dialog"}
-      dropdownIconColor="#0c5886ff"
-      style={styles.picker}
-    >
-      <Picker.Item label="Select Gender" value="" />
-      <Picker.Item label="Male" value="Male" />
-      <Picker.Item label="Female" value="Female" />
-      <Picker.Item label="Others" value="Others" />
-    </Picker>
-  </View>
-</View>
+            <View>
+              <Text style={styles.label}>Gender</Text>
+              <TouchableOpacity style={styles.inputWithIcon} onPress={openGenderModal}>
+                <View pointerEvents="none">
+                  <TextInput
+                    value={gender}
+                    placeholder="Select Gender"
+                    placeholderTextColor="#7B7B7B"
+                    style={styles.input}
+                    editable={false}
+                  />
+                </View>
+              </TouchableOpacity>
 
-          </View>
+              {/* Gender Modal */}
+              <Modal
+                visible={showGenderModal}
+                animationType="fade"
+                transparent
+                onRequestClose={closeGenderModal}
+              >
+                <Pressable style={styles.modalOverlay} onPress={closeGenderModal}>
+                  <Animated.View
+                    style={[styles.modalContainer, { transform: [{ translateY }] }]}
+                  >
+                    <View style={styles.modalContent}>
+                      <Text style={styles.modalTitle}>Select Gender</Text>
+                      {["Male", "Female", "Others"].map((g) => (
+                        <TouchableOpacity
+                          key={g}
+                          style={[
+                            styles.genderOption,
+                            gender === g && styles.genderOptionSelected,
+                          ]}
+                          onPress={() => selectGender(g as Gender)}
+                        >
+                          <Text
+                            style={[
+                              styles.genderOptionText,
+                              gender === g && styles.genderOptionTextSelected,
+                            ]}
+                          >
+                            {g}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </Animated.View>
+                </Pressable>
+              </Modal>
+            </View>
+          </Animated.View>
         </ScrollView>
 
         {/* Footer */}
@@ -276,18 +383,6 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
 
-  pickerBox: {
-    marginTop: verticalScale(8),
-    borderWidth: 1,
-    borderColor: "#C2D5D8",
-    borderRadius: scale(5),
-    backgroundColor: "#fff",
-  },
-  picker: {
-    height: moderateScale(48),
-    color: "#0B0B0B", // make sure text is visible
-  },
-
   inputWithIcon: { position: "relative", justifyContent: "center" },
   rightIcon: {
     position: "absolute",
@@ -316,4 +411,53 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   ctaText: { color: "#fff", fontWeight: "700", fontSize: moderateScale(14) },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+
+  modalContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: scale(16),
+    borderTopRightRadius: scale(16),
+    paddingVertical: verticalScale(20),
+    paddingHorizontal: scale(16),
+  },
+
+  modalContent: {
+    gap: verticalScale(12),
+  },
+
+  modalTitle: {
+    fontSize: moderateScale(16),
+    fontFamily: "Mulish-Bold",
+    textAlign: "center",
+    marginBottom: verticalScale(8),
+    color: "#0B0B0B",
+  },
+
+  genderOption: {
+    paddingVertical: verticalScale(12),
+    borderBottomWidth: 1,
+    borderColor: "#E5E5E5",
+    alignItems: "center",
+  },
+
+  genderOptionSelected: {
+    backgroundColor: "#E7F1F3",
+    borderRadius: scale(6),
+  },
+
+  genderOptionText: {
+    fontSize: moderateScale(14),
+    color: "#0B0B0B",
+    fontFamily: "Mulish-Regular",
+  },
+
+  genderOptionTextSelected: {
+    color: "#0B7C84",
+    fontFamily: "Mulish-Bold",
+  },
 });

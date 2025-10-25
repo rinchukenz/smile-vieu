@@ -23,6 +23,10 @@ import Upload from "../../assets/icons/upload.svg";
 import QualificationPicker from "@/src/components/authComponents/QualificationPicker";
 import { useRouter } from "expo-router";
 import SpecialityPicker from "@/src/components/authComponents/SpecialityPicker";
+import { updateDoctorProfile, uploadDocument } from "@/src/api/auth";
+import * as DocumentPicker from "expo-document-picker";
+import { useAuthStore } from "@/src/store/authStore";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -34,13 +38,15 @@ export default function MoreDetails() {
   const headerHeight = useHeaderHeight();
   const router = useRouter();
 
+  const { userId } = useAuthStore.getState();
+
   // normal 2 steps, plus a review "mode"
   const [stepIndex, setStepIndex] = useState(0); // 0 = About, 1 = Registration
   const [reviewMode, setReviewMode] = useState(false);
 
   // form state
   const [qualification, setQualification] = useState("");
-  const [specialty, setSpecialty] = useState("");
+  const [speciality, setSpeciality] = useState("");
   const [about, setAbout] = useState("");
   const [regNo, setRegNo] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -48,17 +54,17 @@ export default function MoreDetails() {
   // validation
   const stepValid = useMemo(() => {
     if (reviewMode) return true; // already editing everything
-    if (stepIndex === 0) return !!(qualification && specialty);
+    if (stepIndex === 0) return !!(qualification && speciality);
     if (stepIndex === 1) return regNo.length >= 3;
     return false;
-  }, [reviewMode, stepIndex, qualification, specialty, regNo]);
+  }, [reviewMode, stepIndex, qualification, speciality, regNo]);
 
   const goTo = (index: number) => {
     setStepIndex(index);
     scrollRef.current?.scrollTo({ x: SCREEN_W * index, animated: true });
   };
 
-  const onContinue = () => {
+  const onContinue = async () => {
     if (!stepValid) return;
 
     if (!reviewMode) {
@@ -70,13 +76,42 @@ export default function MoreDetails() {
     } else {
       console.log("[MoreDetails] SUBMIT", {
         qualification,
-        specialty,
+        speciality,
         about,
         regNo,
         fileName,
       });
 
-      router.push("/(auth)/uploadProfilePicture");
+      try {
+        const data = {
+          qualification,
+          speciality: speciality,
+          description: about,
+          registrationNumber: regNo,
+        };
+
+        console.log(
+          "Sending doctor profile update payload:",
+          JSON.stringify(data, null, 2)
+        );
+
+        const response = await updateDoctorProfile(data);
+        console.log("Doctor profile updated:", response);
+        alert("Profile details updated successfully!");
+        router.push("/(auth)/uploadProfilePicture");
+      } catch (error: any) {
+        if (error.response) {
+          console.error(
+            "Server response:",
+            error.response.status,
+            error.response.data
+          );
+          alert(`Failed: ${JSON.stringify(error.response.data)}`);
+        } else {
+          console.error("Error updating profile:", error);
+          alert("Failed to update profile. Check console for details.");
+        }
+      }
     }
   };
 
@@ -103,6 +138,32 @@ export default function MoreDetails() {
   const showTick = (i: number) => {
     if (reviewMode) return true;
     return i < stepIndex;
+  };
+
+  const handleBrowse = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*", // allow any file
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets?.length > 0) {
+        const file = {
+          uri: result.assets[0].uri,
+          name: result.assets[0].name,
+          type: result.assets[0].mimeType || "application/octet-stream",
+        };
+
+        const response = await uploadDocument(file);
+        console.log("Upload success:", response);
+        setFileName(file.name);
+        alert("File uploaded successfully!");
+        console.log("File Details", file);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Upload failed. Check console for details.");
+    }
   };
 
   const bottomPad = verticalScale(240);
@@ -174,9 +235,14 @@ export default function MoreDetails() {
                 }
                 contentContainerStyle={{ paddingBottom: bottomPad }}
               >
-                <View style={styles.segmentTabs}>
+                <LinearGradient
+                  colors={["#22466D", "#107483"]}
+                  start={{ x: 1, y: 0 }} // right
+                  end={{ x: 0, y: 0 }} // left
+                  style={styles.segmentTabs}
+                >
                   <Text style={styles.tab}>Hospital</Text>
-                </View>
+                </LinearGradient>
 
                 <View style={styles.fieldBlock}>
                   <Text style={styles.label}>Qualification</Text>
@@ -193,7 +259,7 @@ export default function MoreDetails() {
                             " — clearing specialty"
                           );
                           setQualification(q);
-                          setSpecialty("");
+                          setSpeciality("");
                         } else {
                           console.log(
                             "[MoreDetails] qualification unchanged, ignoring"
@@ -209,10 +275,10 @@ export default function MoreDetails() {
                   <View style={styles.inputBox}>
                     <SpecialityPicker
                       qualification={qualification}
-                      value={specialty}
+                      value={speciality}
                       onChange={(v: string) => {
                         console.log("[MoreDetails] specialty set to:", v);
-                        setSpecialty(v);
+                        setSpeciality(v);
                       }}
                     />
                   </View>
@@ -288,10 +354,11 @@ export default function MoreDetails() {
                   </View>
                   <TouchableOpacity
                     style={styles.browseBtn}
-                    onPress={() => setFileName("certificate.pdf")}
+                    onPress={handleBrowse}
                   >
                     <Text style={styles.browseText}>Browse Files</Text>
                   </TouchableOpacity>
+
                   {!!fileName && (
                     <Text style={styles.fileName}>{fileName}</Text>
                   )}
@@ -336,7 +403,7 @@ export default function MoreDetails() {
                         " — clearing specialty"
                       );
                       setQualification(q);
-                      setSpecialty("");
+                      setSpeciality("");
                     } else {
                       console.log(
                         "[MoreDetails][Review] qualification unchanged, ignoring"
@@ -352,10 +419,10 @@ export default function MoreDetails() {
               <View style={styles.inputBox}>
                 <SpecialityPicker
                   qualification={qualification}
-                  value={specialty}
+                  value={speciality}
                   onChange={(v: string) => {
                     console.log("[MoreDetails][Review] specialty set to:", v);
-                    setSpecialty(v);
+                    setSpeciality(v);
                   }}
                 />
               </View>
@@ -418,7 +485,7 @@ export default function MoreDetails() {
               </View>
               <TouchableOpacity
                 style={styles.browseBtn}
-                onPress={() => setFileName("certificate.pdf")}
+                onPress={handleBrowse}
               >
                 <Text style={styles.browseText}>Browse Files</Text>
               </TouchableOpacity>
@@ -520,7 +587,7 @@ const styles = StyleSheet.create({
   segmentTabs: {
     alignContent: "center",
     borderRadius: 6,
-    backgroundColor: "#0B7C84",
+    //backgroundColor: "#0B7C84",
     height: verticalScale(50),
     paddingVertical: verticalScale(15),
   },

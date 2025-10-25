@@ -1,5 +1,5 @@
 // app/(auth)/upload-profile-picture.tsx
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -15,49 +15,16 @@ import { moderateScale, scale, verticalScale } from "react-native-size-matters";
 import Camera from "../../assets/icons/camera.svg";
 import { useRouter } from "expo-router";
 import Back from "../../assets/images/back-arrow.svg";
+import * as ImagePicker from "expo-image-picker";
+import { uploadProfilePicture } from "@/src/api/auth";
+//import { uploadProfilePicture } from "../../apis/authApi";
 
 export default function UploadProfilePicture() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [showUrlModal, setShowUrlModal] = useState(false);
   const [tempUrl, setTempUrl] = useState("");
-  const webFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
   const router = useRouter();
-
-  const onUploadPress = () => {
-    if (Platform.OS === "web") {
-      // trigger the hidden <input type="file">
-      webFileInputRef.current?.click();
-    } else {
-      // Native (no picker): let users paste a URL
-      setShowUrlModal(true);
-    }
-  };
-
-  // WEB: handle file choose -> read as data URL so Image can preview it
-  const onWebFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") setImageUri(reader.result);
-    };
-    reader.readAsDataURL(file);
-    // reset the input so selecting same file again still triggers change
-    e.currentTarget.value = "";
-  };
-
-  // NATIVE: URL modal handlers
-  const confirmUrl = () => {
-    if (!tempUrl.trim()) return;
-    // optionally add a light validation
-    if (!/^https?:\/\/.+\.(png|jpe?g|webp|gif)(\?.*)?$/i.test(tempUrl.trim())) {
-      // accept any URL if you prefer; this is just a guard
-      // remove the regex check if your backend can handle more
-    }
-    setImageUri(tempUrl.trim());
-    setShowUrlModal(false);
-    setTempUrl("");
-  };
 
   const handleBackPress = () => router.back();
 
@@ -66,13 +33,76 @@ export default function UploadProfilePicture() {
     router.push("/(auth)/profileCreated");
   };
 
-  const onContinue = () => {
-    console.log("Continue with photo:", imageUri);
-    // If uploading to your API:
-    // - WEB (data URL): convert to Blob before upload
-    // - NATIVE (URL): send the URL or download+upload server-side
-    router.push("/(auth)/profileCreated");
+  const pickImageFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
   };
+
+  const onUploadPress = () => {
+    // For native, we show URL modal OR pick from gallery
+    pickImageFromGallery();
+  };
+
+  const confirmUrl = () => {
+    if (!tempUrl.trim()) return;
+    setImageUri(tempUrl.trim());
+    setShowUrlModal(false);
+    setTempUrl("");
+  };
+
+const onContinue = async () => {
+  if (!imageUri) {
+    console.log("No image selected");
+    router.push("/(auth)/profileCreated");
+    return;
+  }
+
+  try {
+    setUploading(true);
+
+    let file: { uri: string; name: string; type: string } | null = null;
+
+    if (imageUri.startsWith("http")) {
+      // If user pasted URL, you might skip upload and send URL to backend
+      console.log("Using URL directly:", imageUri);
+      // Optionally call API to save profile picture by URL
+      router.push("/(auth)/profileCreated");
+      return;
+    } else {
+      // Local file from ImagePicker
+      const uriParts = imageUri.split("/");
+      const fileName = uriParts[uriParts.length - 1];
+      const fileType = fileName.split(".").pop() || "jpg";
+
+      file = {
+        uri: imageUri,
+        name: fileName,
+        type: `image/${fileType}`,
+      };
+    }
+
+    console.log("Prepared file for upload:", file);
+
+    const response = await uploadProfilePicture(file!);
+
+    router.push("/(auth)/profileCreated");
+
+
+    
+  } catch (err: any) {
+    console.error("Upload error:", err.response?.data || err.message);
+  } finally {
+    setUploading(false);
+  }
+};
+
+
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -109,18 +139,6 @@ export default function UploadProfilePicture() {
         <TouchableOpacity style={styles.outlineBtn} onPress={onUploadPress}>
           <Text style={styles.outlineBtnText}>Upload</Text>
         </TouchableOpacity>
-
-        {/* WEB-ONLY hidden file input */}
-        {Platform.OS === "web" ? (
-          // @ts-ignore: this JSX tag is fine on web
-          <input
-            ref={webFileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={onWebFileChange}
-          />
-        ) : null}
       </View>
 
       <View style={styles.footer}>
@@ -131,8 +149,11 @@ export default function UploadProfilePicture() {
         <TouchableOpacity
           style={[styles.cta, styles.continue]}
           onPress={onContinue}
+          disabled={uploading}
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>
+            {uploading ? "Uploading..." : "Continue"}
+          </Text>
         </TouchableOpacity>
       </View>
 
