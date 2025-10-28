@@ -461,3 +461,12 @@ export default function Index() {
     return <Redirect href="/(auth)/login" />;
   }
 }
+
+
+
+
+const imageData = [
+    { id: "1", name: "Chest X-Ray", src: require("../../../../assets/images/image1.jpg") },
+    { id: "2", name: "MRI Scan", src: require("../../../../assets/images/image1.jpg") },
+    { id: "3", name: "CT Report", src: require("../../../../assets/images/image1.jpg") },
+  ];

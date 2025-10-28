@@ -18,7 +18,7 @@ export default function ProfileScreen() {
       {/* 🧍‍♂️ Profile Info */}
       <View style={styles.profileSection}>
         <View style={styles.imageWrapper}>
-          <ProfilePicture width={90} height={90} />
+          <ProfilePicture width={scale(90)} height={scale(90)} />
         </View>
         <View style={styles.details}>
           <Text style={styles.name}>Dr. Phani Kiran</Text>
@@ -96,8 +96,8 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(30),
   },
   imageWrapper: {
-    width: moderateScale(95),
-    height: moderateScale(95),
+    width: moderateScale(105),
+    height: moderateScale(105),
     borderRadius: moderateScale(55),
     borderWidth: 2,
     borderColor: "#107483",
