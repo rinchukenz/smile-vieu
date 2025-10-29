@@ -7,6 +7,7 @@ import {
   FlatList,
   StyleSheet,
 } from "react-native";
+import { VerticalScale, moderateScale, scale } from "react-native-size-matters";
 
 type Props = {
   value?: string;
@@ -44,7 +45,7 @@ const QualificationPicker: React.FC<Props> = ({ value, onChange }) => {
         style={styles.inputBox}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={{ color: value ? "#000" : "#7B7B7B" }}>
+        <Text style={{ color: value ? "#000" : "#7B7B7B", fontSize: moderateScale(14) }}>
           {value || "Select qualification"}
         </Text>
       </TouchableOpacity>
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     // borderWidth: 1,
     // borderColor: "#C2D5D8",
     // borderRadius: 8,
-    padding: 12,
+    padding: moderateScale(12),
     justifyContent: "center",
   },
   modalOverlay: {
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
   },
   optionText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: "#000",
   },
 });

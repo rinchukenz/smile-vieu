@@ -14,7 +14,7 @@ import BackArrow from "../../assets/images/back-arrow.svg";
 import OtpIcon from "../../assets/icons/otp-icon.svg";
 import { verifyOtp, resendOtp } from "@/src/api/auth";
 import { useAuthStore } from "@/src/store/authStore";
-
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Otp() {
   const [otp, setOtp] = useState(Array(6).fill(""));
@@ -24,7 +24,6 @@ export default function Otp() {
 
   // Correct way to get requestId from search params
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
-
 
   //console.log("Request ID:", requestId);
 
@@ -65,6 +64,11 @@ export default function Otp() {
     }
   };
 
+  // Dummy Function
+  const dummyGo = () => {
+    router.push("/(auth)/userAgreement");
+  }
+
   const handleContinue = async () => {
     if (!requestId) {
       Alert.alert("Error", "Request ID missing. Please go back and try again.");
@@ -102,7 +106,7 @@ export default function Otp() {
     <View style={styles.container}>
       {/* Back Button */}
       <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-        <BackArrow width={scale(24)} height={scale(24)} />
+        <Ionicons name="chevron-back" size={scale(24)} color="#22466D" />      
       </TouchableOpacity>
 
       {/* OTP Icon */}
@@ -152,7 +156,7 @@ export default function Otp() {
       </View>
 
       {/* Continue Button */}
-      <TouchableOpacity style={styles.button} onPress={handleContinue}>
+      <TouchableOpacity style={styles.button} onPress={dummyGo}>
         <Text style={styles.buttonText}>Continue</Text>
       </TouchableOpacity>
     </View>
@@ -160,19 +164,73 @@ export default function Otp() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: scale(16), justifyContent: "center", backgroundColor: "#fff" },
-  backButton: { position: "absolute", top: verticalScale(60), left: scale(16), zIndex: 1 },
+  container: {
+    flex: 1,
+    paddingHorizontal: scale(16),
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  backButton: {
+    position: "absolute",
+    top: verticalScale(60),
+    left: scale(16),
+    zIndex: 1,
+  },
   textContainer: { gap: verticalScale(8), marginBottom: verticalScale(32) },
-  title: { fontSize: moderateScale(18), fontFamily: "Mulish-Bold", textAlign: "center" },
-  subtitle: { textAlign: "center", fontSize: moderateScale(14), fontFamily: "Mulish-SemiBold", color: "#7B7B7B" },
-  otpContainer: { flexDirection: "row", justifyContent: "center", gap: moderateScale(15), alignItems: "center", marginBottom: verticalScale(24) },
+  title: {
+    fontSize: moderateScale(18),
+    fontFamily: "Mulish-Bold",
+    textAlign: "center",
+  },
+  subtitle: {
+    textAlign: "center",
+    fontSize: moderateScale(14),
+    fontFamily: "Mulish-SemiBold",
+    color: "#7B7B7B",
+  },
+  otpContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: moderateScale(12),
+    alignItems: "center",
+    marginBottom: verticalScale(24),
+
+  },
   otpIcon: { alignItems: "center", marginBottom: verticalScale(24) },
-  otpInput: { borderBottomWidth: 2, borderColor: "#7B7B7B", width: scale(50), fontSize: moderateScale(24), fontFamily: "Mulish-Bold", textAlign: "center" },
-  timerContainer: { alignItems: "center", gap: verticalScale(8), marginBottom: verticalScale(64) },
-  resendOtpContainer: { flexDirection: "row", alignItems: "center", gap: scale(8) },
+  otpInput: {
+    borderBottomWidth: 2,
+    borderColor: "#7B7B7B",
+    width: moderateScale(45),
+    fontSize: moderateScale(24),
+    fontFamily: "Mulish-Bold",
+    textAlign: "center",
+  },
+  timerContainer: {
+    alignItems: "center",
+    gap: verticalScale(8),
+    marginBottom: verticalScale(64),
+  },
+  resendOtpContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(8),
+  },
   didntReceiveCodeText: { fontSize: moderateScale(14), color: "#7B7B7B" },
   timerText: { color: "#7B7B7B", fontSize: moderateScale(14) },
-  resendText: { color: "#22466D", fontWeight: "600", fontSize: moderateScale(14) },
-  button: { backgroundColor: "#107483", paddingVertical: verticalScale(14), borderRadius: scale(8) },
-  buttonText: { color: "#fff", textAlign: "center", fontSize: moderateScale(14), fontWeight: "600" },
+  resendText: {
+    color: "#22466D",
+    fontWeight: "600",
+    fontSize: moderateScale(14),
+  },
+  button: {
+    backgroundColor: "#107483",
+    paddingVertical: verticalScale(14),
+    borderRadius: scale(8),
+  },
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontSize: moderateScale(14),
+    fontWeight: "600",
+  },
 });

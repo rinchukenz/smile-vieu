@@ -23,7 +23,7 @@ export default function DocumentsScreen() {
     <View style={styles.container}>
       {/* Custom Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="chevron-back" size={24} color="#22466D" />
+        <Ionicons name="chevron-back" size={scale(24)} color="#22466D" />
       </TouchableOpacity>
 
       <Text style={styles.title}>Your Patients</Text>
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(32),
     alignSelf: "flex-start",
   },
-  title: { fontSize: 22, fontWeight: "600", color: "#000" },
+  title: { fontSize: moderateScale(22), fontWeight: "600", color: "#000" },
   searchBar: {
     marginBottom: verticalScale(24),
   },

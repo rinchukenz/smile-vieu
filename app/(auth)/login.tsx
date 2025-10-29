@@ -23,6 +23,11 @@ export default function Login() {
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
 
+  // Dummy Function
+  const dummyGo = () => {
+    router.push("/(auth)/otp");
+  }
+
   const validate = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\d{10,15}$/; // 10+ digits (no country code)
@@ -90,7 +95,7 @@ export default function Login() {
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <TouchableOpacity style={styles.button} onPress={validate}>
+            <TouchableOpacity style={styles.button} onPress={dummyGo}>
               <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
           </View>

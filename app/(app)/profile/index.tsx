@@ -90,10 +90,11 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     flexDirection: "row",
-    gap: scale(12),
+    gap: scale(16),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(30),
+    paddingLeft: moderateScale(10),
   },
   imageWrapper: {
     width: moderateScale(105),

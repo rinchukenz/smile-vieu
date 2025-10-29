@@ -148,6 +148,11 @@ export default function BasicDetails() {
     closeGenderModal();
   };
 
+  // Dummy Function
+  const dummyGo = () => {
+    router.push("/(auth)/moreDetails");
+  }
+
   const onContinue = async () => {
   if (!firstName || !lastName || !dobText || !gender) {
     alert("Please fill all fields correctly");
@@ -324,7 +329,7 @@ export default function BasicDetails() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.cta} onPress={onContinue}>
+          <TouchableOpacity style={styles.cta} onPress={dummyGo}>
             <Text style={styles.ctaText}>Continue</Text>
           </TouchableOpacity>
         </View>

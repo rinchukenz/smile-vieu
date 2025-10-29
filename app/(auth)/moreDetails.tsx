@@ -27,6 +27,7 @@ import { updateDoctorProfile, uploadDocument } from "@/src/api/auth";
 import * as DocumentPicker from "expo-document-picker";
 import { useAuthStore } from "@/src/store/authStore";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -63,6 +64,11 @@ export default function MoreDetails() {
     setStepIndex(index);
     scrollRef.current?.scrollTo({ x: SCREEN_W * index, animated: true });
   };
+
+  // Dummy Function
+  const dummyGo = () => {
+    router.push("/(auth)/uploadProfilePicture");
+  }
 
   const onContinue = async () => {
     if (!stepValid) return;
@@ -176,7 +182,7 @@ export default function MoreDetails() {
           onPress={onBack}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Back />
+        <Ionicons name="chevron-back" size={scale(24)} color="#22466D" />
         </TouchableOpacity>
         <TouchableOpacity onPress={onSkip}>
           <Text style={styles.skip}>Skip</Text>
@@ -380,13 +386,20 @@ export default function MoreDetails() {
               paddingBottom: bottomPad,
             }}
           >
-            <Text style={styles.sectionTitle}>
-              Tell us bit more about yourself
-            </Text>
+            
 
-            <View style={styles.segmentTabs}>
+            {/* <View style={styles.segmentTabs}>
               <Text style={styles.tab}>Hospital</Text>
-            </View>
+            </View> */}
+
+            <LinearGradient
+                  colors={["#22466D", "#107483"]}
+                  start={{ x: 1, y: 0 }} // right
+                  end={{ x: 0, y: 0 }} // left
+                  style={styles.segmentTabs}
+                >
+                  <Text style={styles.tab}>Hospital</Text>
+                </LinearGradient>
 
             <View style={styles.fieldBlock}>
               <Text style={styles.label}>Qualification</Text>
@@ -464,7 +477,7 @@ export default function MoreDetails() {
                   onChangeText={setRegNo}
                   placeholder="Enter your registration number"
                   placeholderTextColor="#7B7B7B"
-                  style={styles.input}
+                  style={styles.input} 
                   autoCapitalize="characters"
                 />
               </View>
@@ -499,7 +512,7 @@ export default function MoreDetails() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.cta} onPress={onContinue}>
+        <TouchableOpacity style={styles.cta} onPress={dummyGo}>
           <Text style={styles.ctaText}>Continue</Text>
         </TouchableOpacity>
       </View>
@@ -509,10 +522,10 @@ export default function MoreDetails() {
 
 /* ===== styles unchanged (same as your original) ===== */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#fff" },
+  safe: { flex: 1, backgroundColor: "#fff", },
   topBar: {
     paddingHorizontal: 16,
-    paddingTop: Platform.select({ ios: 8, android: 8 }),
+    paddingTop: Platform.select({ ios: verticalScale(10), android: verticalScale(10) }),
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -569,9 +582,9 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(20),
     fontFamily: "Mulish-Bold",
     color: "#000000ff",
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(8),
     marginBottom: verticalScale(16),
-    marginTop: verticalScale(32),
+    marginTop: verticalScale(48),
   },
   sectionTitle: {
     fontSize: moderateScale(16),
@@ -602,7 +615,7 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontFamily: "Mulish-SemiBold",
     fontSize: moderateScale(14),
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   inputBox: {
     borderWidth: 1,
@@ -613,7 +626,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   input: {
-    paddingHorizontal: 12,
+    paddingHorizontal: moderateScale(12),
     paddingVertical: Platform.select({ ios: 12, android: 10 }),
     fontSize: moderateScale(14),
     fontFamily: "Mulish-Regular",
@@ -679,5 +692,5 @@ const styles = StyleSheet.create({
     borderRadius: scale(6),
     alignItems: "center",
   },
-  ctaText: { color: "#fff", fontWeight: "700" },
+  ctaText: { color: "#fff", fontWeight: "700", fontSize: moderateScale(16) },
 });

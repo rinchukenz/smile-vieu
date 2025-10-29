@@ -10,7 +10,6 @@ export default function AuthLayout() {
       <Stack.Screen name="moreDetails" />
       <Stack.Screen name="uploadProfilePicture" />
       <Stack.Screen name="profileCreated" />
-
     </Stack>
   );
 }

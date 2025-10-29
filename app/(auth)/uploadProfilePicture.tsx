@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import Back from "../../assets/images/back-arrow.svg";
 import * as ImagePicker from "expo-image-picker";
 import { uploadProfilePicture } from "@/src/api/auth";
+import { Ionicons } from "@expo/vector-icons";
 //import { uploadProfilePicture } from "../../apis/authApi";
 
 export default function UploadProfilePicture() {
@@ -55,6 +56,11 @@ export default function UploadProfilePicture() {
     setShowUrlModal(false);
     setTempUrl("");
   };
+
+  // Dummy Function
+  const dummyGo = () => {
+    router.push("/(auth)/profileCreated");
+  }
 
 const onContinue = async () => {
   if (!imageUri) {
@@ -112,7 +118,7 @@ const onContinue = async () => {
         hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
         onPress={handleBackPress}
       >
-        <Back />
+        <Ionicons name="chevron-back" size={scale(24)} color="#22466D" />      
       </TouchableOpacity>
 
       <View style={styles.card}>
@@ -148,7 +154,7 @@ const onContinue = async () => {
 
         <TouchableOpacity
           style={[styles.cta, styles.continue]}
-          onPress={onContinue}
+          onPress={dummyGo}
           disabled={uploading}
         >
           <Text style={styles.continueText}>
@@ -206,7 +212,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  backWrap: { marginTop: verticalScale(8), width: scale(40) },
+  backWrap: { marginTop: verticalScale(12), width: scale(40) },
 
   title: {
     fontSize: moderateScale(20),

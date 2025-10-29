@@ -81,17 +81,17 @@ export default function PatientDetail() {
       {/* Header */}
       <View style={styles.topIconContainer}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#22466D" />
+          <Ionicons name="chevron-back" size={scale(24)} color="#22466D" />
         </TouchableOpacity>
         <TouchableOpacity>
-          <Ionicons name="ellipsis-vertical" size={24} color="#22466D" />
+          <Ionicons name="ellipsis-vertical" size={scale(24)} color="#22466D" />
         </TouchableOpacity>
       </View>
 
       {/* Profile Info */}
       <View style={styles.profileContainer}>
         <View style={styles.imageWrapper}>
-          <Patient1 width={scale(90)} height={scale(90)} />
+          <Patient1 width={moderateScale(90)} height={moderateScale(90)} />
         </View>
         <Text style={styles.name}>Smrithi</Text>
         <Text style={styles.age}>28 yrs • Female</Text>
@@ -187,7 +187,7 @@ export default function PatientDetail() {
                   <View style={styles.docCardDetails}>
                     <Ionicons
                       name="document-text-outline"
-                      size={40}
+                      size={moderateScale(40)}
                       color="#FF3B30"
                       style={{ marginRight: moderateScale(10) }}
                     />
@@ -201,7 +201,7 @@ export default function PatientDetail() {
                   <TouchableOpacity>
                     <Ionicons
                       name="ellipsis-vertical"
-                      size={24}
+                      size={moderateScale(24)}
                       color="#22466D"
                     />
                   </TouchableOpacity>
@@ -231,8 +231,8 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(18),
   },
   imageWrapper: {
-    width: moderateScale(105),
-    height: moderateScale(105),
+    width: moderateScale(100),
+    height: moderateScale(100),
     borderRadius: moderateScale(55),
     borderWidth: 2,
     borderColor: "#107483",
@@ -255,8 +255,8 @@ const styles = StyleSheet.create({
   middleContainer: {
     flex: 1,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 35,
-    borderTopRightRadius: 35,
+    borderTopLeftRadius: moderateScale(25),
+    borderTopRightRadius: moderateScale(25),
     paddingHorizontal: moderateScale(15),
     paddingBottom: verticalScale(10),
   },

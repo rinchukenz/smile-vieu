@@ -7,6 +7,7 @@ import {
   FlatList,
   StyleSheet,
 } from "react-native";
+import { moderateScale } from "react-native-size-matters";
 
 type Props = {
   qualification?: string;
@@ -50,7 +51,7 @@ const SpecialityPickerModal: React.FC<Props> = ({ qualification, value, onChange
         style={styles.inputBox}
         onPress={() => options.length && setModalVisible(true)}
       >
-        <Text style={{ color: value ? "#000" : "#7B7B7B" }}>
+        <Text style={{ color: value ? "#000" : "#7B7B7B", fontSize: moderateScale(14) }}>
           {value || (!options.length ? "Select qualification first" : "Select specialty")}
         </Text>
       </TouchableOpacity>
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     // borderWidth: 1,
     // borderColor: "#cf6a12ff",
     // borderRadius: 8,
-    padding: 12,
+    padding: moderateScale(12),
     justifyContent: "center",
   },
   modalOverlay: {
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
   },
   optionText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: "#000",
   },
 });

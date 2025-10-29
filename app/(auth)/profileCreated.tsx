@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     gap: verticalScale(12),
   },
   text: {
-    marginTop: verticalScale(24),
+    marginTop: verticalScale(24),
     color: "#000000",
     fontFamily: "Mulish-Bold",
     fontSize: moderateScale(20),
